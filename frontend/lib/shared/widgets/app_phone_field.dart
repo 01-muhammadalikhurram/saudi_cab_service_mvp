@@ -28,13 +28,11 @@ class AppPhoneField extends StatelessWidget {
     required this.label,
     this.controller,
     this.onChanged,
-    this.initialCountryCode = IsoCode.SA,
   });
 
   final String label;
   final PhoneController? controller;
   final ValueChanged<PhoneNumber?>? onChanged;
-  final IsoCode initialCountryCode;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +44,6 @@ class AppPhoneField extends StatelessWidget {
         PhoneFormField(
           controller: controller,
           onChanged: onChanged,
-          initialValue: PhoneNumber.parse('', callerCountry: initialCountryCode),
           countrySelectorNavigator: CountrySelectorNavigator.bottomSheet(
             searchBoxDecoration: InputDecoration(
               hintText: 'Search country...',
