@@ -1,0 +1,6 @@
+# Ignore auto-generated platform files from GitHub language statistics
+web/* linguist-vendored
+windows/* linguist-vendored
+ios/* linguist-vendored
+android/* linguist-vendored
+build/* linguist-vendored
