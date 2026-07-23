@@ -5,9 +5,12 @@ plugins {
 }
 
 android {
-    namespace = "com.example.frontend"
+    namespace = "com.saudicab.service"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Pinned to a specific stable NDK version to avoid auto-download failures.
+    // flutter.ndkVersion (28.2.13676358) requires a large download that can get
+    // corrupted. This version is already available or will install cleanly.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -16,7 +19,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.frontend"
+        applicationId = "com.saudicab.service"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
