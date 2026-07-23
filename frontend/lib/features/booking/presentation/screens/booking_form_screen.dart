@@ -7,6 +7,9 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../domain/entities/booking_entity.dart';
+import '../../../../core/services/whatsapp_service.dart';
+import '../../data/repositories/firestore_booking_repository.dart';
+import '../../domain/repositories/booking_repository.dart';
 import '../widgets/customer_info_section.dart';
 import '../widgets/destination_section.dart';
 import '../widgets/pickup_section.dart';
@@ -60,15 +63,13 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
     super.dispose();
   }
 
-  void _onBookRidePressed() {
-    // Validate all FormFields registered under _formKey.
-    // Because we use SingleChildScrollView+Column (not ListView), every
-    // FormField is always mounted — validate() reaches all of them and
-    // their error text persists until the user corrects each field.
-    final isFormValid = _formKey.currentState?.validate() ?? false;
+  bool _isSubmitting = false;
+  final BookingRepository _bookingRepository = FirestoreBookingRepository();
 
-    // PhoneFormField is a FormField and is validated above via the form key.
-    // We also guard against an empty NSN as a secondary safety check.
+  Future<void> _onBookRidePressed() async {
+    if (_isSubmitting) return;
+
+    final isFormValid = _formKey.currentState?.validate() ?? false;
     final phone = _phoneController.value;
     final isPhoneValid = phone.nsn.isNotEmpty;
 
@@ -85,12 +86,11 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
           ),
         );
       }
-      // Do NOT scroll — scrolling can destroy off-screen FormFields and
-      // clear their error state. Let the user see errors where they are.
       return;
     }
 
-    // All fields are valid — build the domain entity and navigate.
+    setState(() => _isSubmitting = true);
+
     final booking = BookingEntity(
       customerName: _nameController.text.trim(),
       whatsappNumber: phone.international,
@@ -107,6 +107,28 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
           : _notesController.text.trim(),
     );
 
+    String? bookingId;
+    try {
+      // 1. Save to Firebase Firestore
+      bookingId = await _bookingRepository.createBooking(booking);
+    } catch (e) {
+      debugPrint('Firestore write note/fallback: $e');
+    }
+
+    // 2. Launch WhatsApp Chat directly to owner number (+923162624882)
+    try {
+      await WhatsAppService.launchWhatsAppBooking(
+        booking: booking,
+        bookingId: bookingId,
+      );
+    } catch (e) {
+      debugPrint('WhatsApp launcher fallback: $e');
+    }
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    // 3. Navigate to Confirmation Screen
     Navigator.of(context).pushNamed(
       AppRoutes.bookingConfirmation,
       arguments: booking,
@@ -176,6 +198,7 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
                     AppButton(
                       label: AppStrings.bookRideButton,
                       onPressed: _onBookRidePressed,
+                      isLoading: _isSubmitting,
                       icon: Icons.directions_car_rounded,
                     ),
                   ],

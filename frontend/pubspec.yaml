@@ -42,6 +42,15 @@ dependencies:
   # Internationalization support (also required by phone_form_field localizations).
   intl: ^0.20.2
 
+  # URL Launcher for opening WhatsApp chat directly.
+  # Pinned to 6.2.6 — url_launcher_android 6.3.x uses flutter.compileSdkVersion
+  # DSL which fails to resolve in cross-drive (C:/F:) build environments.
+  url_launcher: 6.2.6
+
+  # Firebase Core and Firestore for cloud database storage.
+  firebase_core: ^3.12.1
+  cloud_firestore: ^5.6.5
+
   # Flutter SDK localizations (Material, Widgets, Cupertino).
   flutter_localizations:
     sdk: flutter
