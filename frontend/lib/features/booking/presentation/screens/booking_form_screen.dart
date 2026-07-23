@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:phone_form_field/phone_form_field.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../domain/entities/booking_entity.dart';
 import '../widgets/customer_info_section.dart';
 import '../widgets/destination_section.dart';
 import '../widgets/pickup_section.dart';
@@ -25,7 +27,6 @@ class BookingFormScreen extends StatefulWidget {
 class _BookingFormScreenState extends State<BookingFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
-  final _datePickerKey = GlobalKey();
 
   // ── Customer info ───────────────────────────────────────────────────────────
   final _nameController = TextEditingController();
@@ -60,8 +61,58 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
   }
 
   void _onBookRidePressed() {
-    // Phase 3: validation + BookingEntity creation + navigation
+    // Validate all FormFields registered under _formKey.
+    // Because we use SingleChildScrollView+Column (not ListView), every
+    // FormField is always mounted — validate() reaches all of them and
+    // their error text persists until the user corrects each field.
+    final isFormValid = _formKey.currentState?.validate() ?? false;
+
+    // PhoneFormField is a FormField and is validated above via the form key.
+    // We also guard against an empty NSN as a secondary safety check.
+    final phone = _phoneController.value;
+    final isPhoneValid = phone.nsn.isNotEmpty;
+
+    if (!isFormValid || !isPhoneValid) {
+      if (!isPhoneValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please enter a valid WhatsApp number.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppSpacing.borderRadiusMd,
+            ),
+          ),
+        );
+      }
+      // Do NOT scroll — scrolling can destroy off-screen FormFields and
+      // clear their error state. Let the user see errors where they are.
+      return;
+    }
+
+    // All fields are valid — build the domain entity and navigate.
+    final booking = BookingEntity(
+      customerName: _nameController.text.trim(),
+      whatsappNumber: phone.international,
+      pickupCity: _pickupCity!,
+      pickupLocation: _pickupLocationController.text.trim(),
+      destinationCity: _destinationCity!,
+      destinationLocation: _destinationLocationController.text.trim(),
+      passengers: _passengers!,
+      serviceType: _serviceType!,
+      vehicleType: _vehicleType!,
+      pickupDate: _pickupDate!,
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
+    );
+
+    Navigator.of(context).pushNamed(
+      AppRoutes.bookingConfirmation,
+      arguments: booking,
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +124,10 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
           Expanded(
             child: Form(
               key: _formKey,
-              child: ListView(
+              // SingleChildScrollView + Column keeps ALL FormFields mounted
+              // at all times — unlike ListView which recycles/destroys
+              // off-screen widgets and wipes their validation error state.
+              child: SingleChildScrollView(
                 controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.md,
@@ -81,50 +135,51 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
                   AppSpacing.md,
                   AppSpacing.xxl,
                 ),
-                children: [
-                  CustomerInfoSection(
-                    nameController: _nameController,
-                    phoneController: _phoneController,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  PickupSection(
-                    selectedCity: _pickupCity,
-                    onCityChanged: (city) => setState(() => _pickupCity = city),
-                    locationController: _pickupLocationController,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  DestinationSection(
-                    selectedCity: _destinationCity,
-                    onCityChanged: (city) =>
-                        setState(() => _destinationCity = city),
-                    locationController: _destinationLocationController,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TripPreferencesSection(
-                    selectedPassengers: _passengers,
-                    onPassengersChanged: (v) =>
-                        setState(() => _passengers = v),
-                    selectedServiceType: _serviceType,
-                    onServiceTypeChanged: (v) => setState(() {
-                      _serviceType = v;
-                      _vehicleType = null; // Reset vehicle when service changes
-                    }),
-                    selectedVehicleType: _vehicleType,
-                    onVehicleTypeChanged: (v) =>
-                        setState(() => _vehicleType = v),
-                    selectedDate: _pickupDate,
-                    onDateSelected: (date) =>
-                        setState(() => _pickupDate = date),
-                    notesController: _notesController,
-                    datePickerKey: _datePickerKey,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  AppButton(
-                    label: AppStrings.bookRideButton,
-                    onPressed: _onBookRidePressed,
-                    icon: Icons.directions_car_rounded,
-                  ),
-                ],
+                child: Column(
+                  children: [
+                    CustomerInfoSection(
+                      nameController: _nameController,
+                      phoneController: _phoneController,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    PickupSection(
+                      selectedCity: _pickupCity,
+                      onCityChanged: (city) => setState(() => _pickupCity = city),
+                      locationController: _pickupLocationController,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    DestinationSection(
+                      selectedCity: _destinationCity,
+                      onCityChanged: (city) =>
+                          setState(() => _destinationCity = city),
+                      locationController: _destinationLocationController,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TripPreferencesSection(
+                      selectedPassengers: _passengers,
+                      onPassengersChanged: (v) =>
+                          setState(() => _passengers = v),
+                      selectedServiceType: _serviceType,
+                      onServiceTypeChanged: (v) => setState(() {
+                        _serviceType = v;
+                        _vehicleType = null;
+                      }),
+                      selectedVehicleType: _vehicleType,
+                      onVehicleTypeChanged: (v) =>
+                          setState(() => _vehicleType = v),
+                      selectedDate: _pickupDate,
+                      onDateSelected: (date) =>
+                          setState(() => _pickupDate = date),
+                      notesController: _notesController,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppButton(
+                      label: AppStrings.bookRideButton,
+                      onPressed: _onBookRidePressed,
+                      icon: Icons.directions_car_rounded,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

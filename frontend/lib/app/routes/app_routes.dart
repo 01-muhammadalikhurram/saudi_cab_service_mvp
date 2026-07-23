@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../features/booking/domain/entities/booking_entity.dart';
+import '../../features/booking/presentation/screens/booking_confirmation_screen.dart';
 import '../../features/booking/presentation/screens/booking_form_screen.dart';
 
 /// Centralized route name definitions.
@@ -20,12 +22,9 @@ class AppPages {
           builder: (_) => const BookingFormScreen(),
         );
       case AppRoutes.bookingConfirmation:
+        final booking = settings.arguments as BookingEntity;
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(
-              child: Text('Booking Confirmation — Phase 4'),
-            ),
-          ),
+          builder: (_) => BookingConfirmationScreen(booking: booking),
         );
       default:
         return MaterialPageRoute(
@@ -38,4 +37,3 @@ class AppPages {
     }
   }
 }
-

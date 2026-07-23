@@ -26,7 +26,6 @@ class TripPreferencesSection extends StatelessWidget {
     required this.selectedDate,
     required this.onDateSelected,
     required this.notesController,
-    this.datePickerKey,
   });
 
   final String? selectedPassengers;
@@ -42,9 +41,6 @@ class TripPreferencesSection extends StatelessWidget {
   final ValueChanged<DateTime> onDateSelected;
 
   final TextEditingController notesController;
-
-  /// Optional key for the date picker — used in Phase 3 to trigger validation.
-  final GlobalKey? datePickerKey;
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +115,6 @@ class TripPreferencesSection extends StatelessWidget {
 
           // Pickup Date
           AppDatePicker(
-            key: datePickerKey,
             label: AppStrings.pickupDateLabel,
             hint: AppStrings.pickupDateHint,
             initialDate: selectedDate,
